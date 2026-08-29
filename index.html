@@ -43,38 +43,17 @@
       <div class="hint">Free hours are worth more against a higher hourly rate, so prioritising the pricier childminder usually saves the most.</div>
     </div>
 
-    <div class="field" id="manualPctRow" style="display:none;">
-      <label for="manualPct">% of free hours to <span id="manualPctName">Childminder A</span>: <span id="manualPctVal">50</span>%</label>
-      <input type="range" id="manualPct" min="0" max="100" step="5" value="50" style="padding:0;">
+    <div class="field" id="manualPctWrap" style="display:none;">
+      <label>Custom split &mdash; relative weights</label>
+      <div id="manualPctRows"></div>
+      <div class="hint">Weights are relative &mdash; they don't need to add up to 100%. No childminder is given more free hours than they were booked for that week; any remainder passes to the others.</div>
     </div>
   </div>
 
   <div class="card">
     <h3>Childminders</h3>
-    <div class="cm-block a">
-      <div class="two-col">
-        <div class="field">
-          <label for="nameA">Name</label>
-          <input type="text" id="nameA" value="Childminder A">
-        </div>
-        <div class="field">
-          <label for="rateA">Rate (£/hr)</label>
-          <input type="number" id="rateA" value="5.50" min="0" step="0.01">
-        </div>
-      </div>
-    </div>
-    <div class="cm-block b">
-      <div class="two-col">
-        <div class="field">
-          <label for="nameB">Name</label>
-          <input type="text" id="nameB" value="Childminder B">
-        </div>
-        <div class="field">
-          <label for="rateB">Rate (£/hr)</label>
-          <input type="number" id="rateB" value="7.50" min="0" step="0.01">
-        </div>
-      </div>
-    </div>
+    <div id="cmList"></div>
+    <button type="button" id="addCm" class="add-cm">+ Add childminder</button>
   </div>
 
   <div class="card">
@@ -89,12 +68,7 @@
   <div class="card">
     <h3 id="calMonthLabel">Calendar</h3>
     <p class="cal-hint">Tap any scheduled day to exclude it (e.g. sick day, day off) — tap again to include it.</p>
-    <div class="legend">
-      <div class="legend-item"><span class="legend-swatch a"></span><span id="legendNameA">Childminder A</span></div>
-      <div class="legend-item"><span class="legend-swatch b"></span><span id="legendNameB">Childminder B</span></div>
-      <div class="legend-item"><span class="legend-swatch holiday"></span>Bank holiday</div>
-      <div class="legend-item"><span class="legend-swatch free"></span>Free hours used</div>
-    </div>
+    <div class="legend" id="legend"></div>
     <div class="cal-grid" id="calDow">
       <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
       <div class="cal-dow">Thu</div><div class="cal-dow">Fri</div><div class="cal-dow">Sat</div><div class="cal-dow">Sun</div>
