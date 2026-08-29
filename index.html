@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Childcare Hours Calculator</title>
+<link rel="stylesheet" href="styles.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<div class="wrap">
+  <h1>Childcare Hours Calculator</h1>
+  <p class="sub">Pick a month, set your weekly schedule across two childminders, and see paid hours after your free hours and bank holidays.</p>
+
+  <div class="card">
+    <h3>Month &amp; free hours</h3>
+    <div class="two-col">
+      <div class="field">
+        <label for="monthPicker">Month</label>
+        <input type="month" id="monthPicker">
+      </div>
+      <div class="field">
+        <label for="freeHours">Free hrs / week</label>
+        <input type="number" id="freeHours" value="30" min="0" step="0.5">
+      </div>
+    </div>
+    <div class="field" style="margin-top:4px;">
+      <label class="toggle-line" for="excludeHolidays">
+        <input type="checkbox" id="excludeHolidays" checked>
+        <span>Exclude England &amp; Wales bank holidays</span>
+      </label>
+      <div class="hint">When on, weekdays that fall on a bank holiday need no childcare and aren't charged. Turn off to treat them as normal booked days.</div>
+    </div>
+
+    <div class="field">
+      <label for="allocStrategy">How to split free hours each week</label>
+      <select id="allocStrategy">
+        <option value="expensive-first" selected>Prioritise the more expensive childminder</option>
+        <option value="cheaper-first">Prioritise the cheaper childminder</option>
+        <option value="proportional">Split proportionally to hours used</option>
+        <option value="manual">Custom split (%)</option>
+      </select>
+      <div class="hint">Free hours are worth more against a higher hourly rate, so prioritising the pricier childminder usually saves the most.</div>
+    </div>
+
+    <div class="field" id="manualPctRow" style="display:none;">
+      <label for="manualPct">% of free hours to <span id="manualPctName">Childminder A</span>: <span id="manualPctVal">50</span>%</label>
+      <input type="range" id="manualPct" min="0" max="100" step="5" value="50" style="padding:0;">
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Childminders</h3>
+    <div class="cm-block a">
+      <div class="two-col">
+        <div class="field">
+          <label for="nameA">Name</label>
+          <input type="text" id="nameA" value="Childminder A">
+        </div>
+        <div class="field">
+          <label for="rateA">Rate (£/hr)</label>
+          <input type="number" id="rateA" value="5.50" min="0" step="0.01">
+        </div>
+      </div>
+    </div>
+    <div class="cm-block b">
+      <div class="two-col">
+        <div class="field">
+          <label for="nameB">Name</label>
+          <input type="text" id="nameB" value="Childminder B">
+        </div>
+        <div class="field">
+          <label for="rateB">Rate (£/hr)</label>
+          <input type="number" id="rateB" value="7.50" min="0" step="0.01">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Weekly schedule</h3>
+    <table class="sched">
+      <tr><th class="day-label">Day</th><th class="cm-col">Childminder</th><th class="hrs-col">Hours</th></tr>
+      <tbody id="schedBody"></tbody>
+    </table>
+    <div class="hint" style="margin-top:10px;">This weekly pattern repeats every week of the selected month (skipping weekends, and bank holidays unless you've turned that off above).</div>
+  </div>
+
+  <div class="card">
+    <h3 id="calMonthLabel">Calendar</h3>
+    <p class="cal-hint">Tap any scheduled day to exclude it (e.g. sick day, day off) — tap again to include it.</p>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch a"></span><span id="legendNameA">Childminder A</span></div>
+      <div class="legend-item"><span class="legend-swatch b"></span><span id="legendNameB">Childminder B</span></div>
+      <div class="legend-item"><span class="legend-swatch holiday"></span>Bank holiday</div>
+      <div class="legend-item"><span class="legend-swatch free"></span>Free hours used</div>
+    </div>
+    <div class="cal-grid" id="calDow">
+      <div class="cal-dow">Mon</div><div class="cal-dow">Tue</div><div class="cal-dow">Wed</div>
+      <div class="cal-dow">Thu</div><div class="cal-dow">Fri</div><div class="cal-dow">Sat</div><div class="cal-dow">Sun</div>
+    </div>
+    <div class="cal-grid" id="calGrid" style="margin-top:4px;"></div>
+  </div>
+
+  <div class="card results">
+    <h2>Monthly breakdown</h2>
+    <div id="cmSummaries"></div>
+    <div class="grand-total">
+      <span class="label">Total to pay</span>
+      <span class="value" id="grandTotal">£0.00</span>
+    </div>
+    <div class="holiday-note" id="holidayNote"></div>
+    <p class="note">Free hours are capped per week and split between childminders in proportion to the hours booked with each that week. Days you've tapped to exclude on the calendar are removed entirely — no hours, cost, or free-hours use. Weeks that straddle the end/start of the month are counted where they have days inside the selected month — if you also use free hours elsewhere in the same week, you may need to adjust manually.</p>
+  </div>
+</div>
+</body>
+</html>

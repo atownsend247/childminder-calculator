@@ -1,0 +1,92 @@
+# Childcare Hours Calculator
+
+A single-page tool for working out your monthly childcare cost across **two childminders**,
+after government-funded free hours and bank holidays.
+
+No build step, no dependencies, no framework — just three static files
+(`index.html`, `styles.css`, `app.js`). Everything runs in the browser and nothing
+is sent anywhere; there is no backend.
+
+## Features
+
+- **Two childminders** with independent names and hourly rates.
+- **Weekly schedule** (Mon–Fri): assign each day to a childminder and set the hours.
+  The pattern repeats across every week of the selected month.
+- **Free hours** capped per week, split between the two childminders by a strategy you choose:
+  - Prioritise the more expensive childminder (usually the cheapest overall — a free hour
+    is worth more against a higher rate)
+  - Prioritise the cheaper childminder
+  - Split proportionally to the hours booked with each that week
+  - Custom split by percentage
+- **Bank holidays** (England & Wales) auto-excluded — no childcare, no charge.
+  A toggle (on by default) lets you turn this off so bank holidays are treated as
+  normal booked days.
+- **Calendar view** of the month: per-day childminder, hours, cost, and a marker
+  when free hours were applied. Tap any scheduled day to exclude it (sick day, day off)
+  and tap again to include it.
+- **Monthly breakdown**: total hours, free hours used, paid hours, and cost per
+  childminder, plus a grand total.
+
+## Usage
+
+Open `index.html` in a browser. Then:
+
+1. Pick the **month** and your **free hours per week**.
+2. Choose how free hours should be **split** each week.
+3. Set each childminder's **name** and **rate**.
+4. Fill in the **weekly schedule**.
+5. Read the **calendar** and **monthly breakdown**. Tap calendar days to exclude
+   one-offs.
+
+All figures update live as you type.
+
+## How the calculation works
+
+- Each weekday in the month is matched to the weekly schedule by day of week.
+- Weekends are always skipped. Bank holidays are skipped while the toggle is on.
+- Days are grouped into weeks keyed by their Monday. Free hours for a week are
+  `min(free hours per week, hours actually booked that week)`, then split between the
+  two childminders using the chosen strategy.
+- The weekly free allocation is spread across that week's days in date order so the
+  calendar can show a day-by-day cost.
+- Cost per childminder = paid hours × their rate. Grand total = sum of both.
+
+### Known limitation
+
+Weeks that straddle the start or end of the month are counted using only the days
+that fall inside the selected month. If you also use free hours elsewhere in such a
+week (i.e. in the adjacent month), you may need to adjust manually.
+
+## Maintaining the bank holiday list
+
+Bank holidays are hardcoded in `app.js` as `BANK_HOLIDAYS`, currently covering
+**2025–2027** (England & Wales). To extend or correct them, edit that `Set` of
+`YYYY-MM-DD` strings. Official dates: <https://www.gov.uk/bank-holidays>.
+
+## Running locally
+
+Opening the file directly works. To match a hosted setup, serve the folder:
+
+```sh
+python3 -m http.server 8000
+# then visit http://localhost:8000
+```
+
+## Deploying
+
+It's a static site — copy the three files (keeping them together) to any static host:
+
+- **GitHub Pages** — commit to a repo and enable Pages on the branch.
+- **Netlify / Vercel / Cloudflare Pages** — drag-drop the folder or connect the repo.
+- **Any web server or object store** — drop the files in the web root; `index.html`
+  is served by default.
+
+## Project structure
+
+```
+childcare-calculator/
+├── index.html   markup
+├── styles.css   all styling
+├── app.js       schedule table, calculation, calendar rendering
+└── README.md
+```
