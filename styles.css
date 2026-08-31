@@ -78,7 +78,11 @@ input:focus, select:focus {
   accent-color: var(--accent);
 }
 .two-col { display: flex; gap: 10px; }
-.two-col .field { flex: 1; }
+.two-col .field { flex: 1; min-width: 0; }
+
+@media (max-width: 420px) {
+  .two-col { flex-direction: column; gap: 16px; }
+}
 
 .cm-block { border-radius: 10px; padding: 14px; margin-bottom: 12px; background: var(--cm-light, #fafafa); }
 .cm-block .field { margin-bottom: 10px; }
