@@ -1,5 +1,7 @@
 # Childcare Hours Calculator
 
+[![Deploy to GitHub Pages](https://github.com/atownsend247/childminder-calculator/actions/workflows/deploy.yml/badge.svg)](https://github.com/atownsend247/childminder-calculator/actions/workflows/deploy.yml)
+
 A single-page tool for working out your monthly childcare cost across **one to four
 childminders**, after government-funded free hours and bank holidays.
 
