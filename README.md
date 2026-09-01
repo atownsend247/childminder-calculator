@@ -1,6 +1,7 @@
 # Childcare Hours Calculator
 
 [![Deploy to GitHub Pages](https://github.com/atownsend247/childminder-calculator/actions/workflows/deploy.yml/badge.svg)](https://github.com/atownsend247/childminder-calculator/actions/workflows/deploy.yml)
+[![Buy Me A Coffee](https://img.shields.io/badge/-buy%20me%20a%20coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/atownsend247)
 
 **[Open the live calculator](https://atownsend247.github.io/childminder-calculator/)**
 
