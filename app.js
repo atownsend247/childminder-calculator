@@ -343,6 +343,49 @@ function calculate() {
   const cost = paid.map((h, i) => h * rates[i]);
   const grand = cost.reduce((a, b) => a + b, 0);
 
+  // ---- weekly breakdown ----
+  // group every weekday of the month (regardless of booking) into calendar weeks
+  // keyed by their Monday, so "Week N" numbering matches the weeks the month actually spans
+  const orderedWeekKeys = [];
+  const weekRange = {}; // weekKey -> { start: dayOfMonth, end: dayOfMonth }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(year, monthIndex, d);
+    const dow = dateObj.getDay();
+    if (dow === 0 || dow === 6) continue;
+    const monday = new Date(dateObj);
+    monday.setDate(dateObj.getDate() - (dow - 1));
+    const weekKey = `${monday.getFullYear()}-${pad(monday.getMonth() + 1)}-${pad(monday.getDate())}`;
+    if (!weekRange[weekKey]) {
+      orderedWeekKeys.push(weekKey);
+      weekRange[weekKey] = { start: d, end: d };
+    } else {
+      weekRange[weekKey].end = d;
+    }
+  }
+
+  const monthAbbrev = new Date(year, monthIndex, 1).toLocaleDateString('en-GB', { month: 'short' });
+  const weekSummaries = orderedWeekKeys.map((wk, idx) => {
+    const w = weeks[wk];
+    let freeSum = 0, costSum = 0;
+    if (w) {
+      w.days.forEach(rec => { freeSum += rec.free; costSum += rec.cost; });
+    }
+    const r = weekRange[wk];
+    const range = (r.start === r.end) ? `${r.start} ${monthAbbrev}` : `${r.start}–${r.end} ${monthAbbrev}`;
+    return { label: `Week ${idx + 1}`, range, free: freeSum, cost: costSum };
+  });
+
+  document.getElementById('weekSummaries').innerHTML = weekSummaries.map(w => `
+    <div class="week-row">
+      <div class="week-head">
+        <span class="week-label">${w.label}</span>
+        <span class="week-range">${w.range}</span>
+      </div>
+      <div class="row"><span class="label">Funded hours</span><span class="value">${fmtHours(w.free)}</span></div>
+      <div class="row paid"><span class="label">Cost</span><span class="value">${fmtMoney(w.cost)}</span></div>
+    </div>
+  `).join('');
+
   // ---- per-childminder summaries ----
   document.getElementById('cmSummaries').innerHTML = childminders.map((cm, i) => `
     <div class="cm-summary ${cmClass(i)}">
