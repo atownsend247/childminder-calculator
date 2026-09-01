@@ -31,6 +31,8 @@ is sent anywhere; there is no backend.
 - **Calendar view** of the month: per-day childminder, hours, cost, and a marker
   when free hours were applied. Tap any scheduled day to exclude it (sick day, day off)
   and tap again to include it.
+- **Weekly breakdown**: funded hours and cost for each week of the month (Week 1,
+  Week 2, ... including a Week 5 when the month spans one), shown after the calendar.
 - **Monthly breakdown**: total hours, free hours used, paid hours, and cost per
   childminder, plus a grand total.
 
@@ -42,8 +44,8 @@ Open `index.html` in a browser. Then:
 2. Choose how free hours should be **split** each week.
 3. Add the **childminders** you use and set each one's **name** and **rate**.
 4. Fill in the **weekly schedule**.
-5. Read the **calendar** and **monthly breakdown**. Tap calendar days to exclude
-   one-offs.
+5. Read the **calendar**, **weekly breakdown**, and **monthly breakdown**. Tap
+   calendar days to exclude one-offs.
 
 All figures update live as you type.
 
@@ -84,7 +86,10 @@ python3 -m http.server 8000
 
 It's a static site — copy the three files (keeping them together) to any static host:
 
-- **GitHub Pages** — commit to a repo and enable Pages on the branch.
+- **GitHub Pages** — this repo deploys automatically via
+  [.github/workflows/deploy.yml](.github/workflows/deploy.yml) on every push to
+  `main` (set the repo's Settings → Pages → Source to **GitHub Actions** once).
+  The live site: <https://atownsend247.github.io/childminder-calculator/>
 - **Netlify / Vercel / Cloudflare Pages** — drag-drop the folder or connect the repo.
 - **Any web server or object store** — drop the files in the web root; `index.html`
   is served by default.
@@ -96,5 +101,6 @@ childcare-calculator/
 ├── index.html   markup
 ├── styles.css   all styling, incl. the 4-slot childminder colour palette
 ├── app.js       state, childminder add/remove, calculation, calendar rendering
+├── .github/workflows/deploy.yml   builds & deploys to GitHub Pages on push to main
 └── README.md
 ```

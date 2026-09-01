@@ -366,13 +366,13 @@ function calculate() {
   const monthAbbrev = new Date(year, monthIndex, 1).toLocaleDateString('en-GB', { month: 'short' });
   const weekSummaries = orderedWeekKeys.map((wk, idx) => {
     const w = weeks[wk];
-    let freeSum = 0, costSum = 0;
+    let freeSum = 0, paidSum = 0, costSum = 0;
     if (w) {
-      w.days.forEach(rec => { freeSum += rec.free; costSum += rec.cost; });
+      w.days.forEach(rec => { freeSum += rec.free; paidSum += rec.paid; costSum += rec.cost; });
     }
     const r = weekRange[wk];
     const range = (r.start === r.end) ? `${r.start} ${monthAbbrev}` : `${r.start}–${r.end} ${monthAbbrev}`;
-    return { label: `Week ${idx + 1}`, range, free: freeSum, cost: costSum };
+    return { label: `Week ${idx + 1}`, range, free: freeSum, paid: paidSum, cost: costSum };
   });
 
   document.getElementById('weekSummaries').innerHTML = weekSummaries.map(w => `
@@ -382,6 +382,7 @@ function calculate() {
         <span class="week-range">${w.range}</span>
       </div>
       <div class="row"><span class="label">Funded hours</span><span class="value">${fmtHours(w.free)}</span></div>
+      <div class="row"><span class="label">Unfunded hours</span><span class="value">${fmtHours(w.paid)}</span></div>
       <div class="row paid"><span class="label">Cost</span><span class="value">${fmtMoney(w.cost)}</span></div>
     </div>
   `).join('');
