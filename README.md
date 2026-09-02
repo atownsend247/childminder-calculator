@@ -10,7 +10,9 @@ childminders**, after government-funded free hours and bank holidays.
 
 No build step, no dependencies, no framework — just three static files
 (`index.html`, `styles.css`, `app.js`). Everything runs in the browser and nothing
-is sent anywhere; there is no backend.
+is sent anywhere; there is no backend. Your setup (childminders, schedule, free
+hours, and term dates) is saved to the browser's `localStorage` so it's still
+there next time you open the page — see [Persistence](#persistence) below.
 
 ## Features
 
@@ -39,6 +41,8 @@ is sent anywhere; there is no backend.
   Week 2, ... including a Week 5 when the month spans one), shown after the calendar.
 - **Monthly breakdown**: total hours, free hours used, paid hours, and cost per
   childminder, plus a grand total.
+- **Persists across sessions**: your whole setup is saved in the browser, so you
+  don't need to re-enter it each visit (see [Persistence](#persistence)).
 
 ## Usage
 
@@ -53,6 +57,19 @@ Open `index.html` in a browser. Then:
    calendar days to exclude one-offs.
 
 All figures update live as you type.
+
+## Persistence
+
+Your childminders, weekly schedule, rates, free-hours setting, bank-holiday and
+term-time toggles, and term dates are saved to the browser's `localStorage` after
+every change, and reloaded automatically next time you open the page — so you only
+need to set it up once, even across sessions. The selected **month** and any
+calendar days you've tapped to exclude are deliberately *not* saved, so you always
+land on the current month with a clean slate.
+
+This is per-browser, per-device storage — nothing is sent anywhere, so your setup
+won't follow you to a different browser or device, and clearing site data (or
+private/incognito browsing) wipes it.
 
 ## How the calculation works
 

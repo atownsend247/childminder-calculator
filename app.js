@@ -212,6 +212,58 @@ function updateTermUI() {
   termRangesWrapEl.style.display = termTimeOnlyEl.checked ? 'block' : 'none';
 }
 
+// ---- persistence: the whole setup survives a reload via localStorage (nothing
+// leaves the browser). The selected month and any tapped calendar exclusions are
+// deliberately NOT persisted, so you always land on the current month with a clean slate.
+const STORAGE_KEY = 'childcare-calculator-state-v1';
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      childminders,
+      schedule,
+      termRanges,
+      freeHours: document.getElementById('freeHours').value,
+      excludeHolidays: document.getElementById('excludeHolidays').checked,
+      allocStrategy: allocStrategyEl.value,
+      termTimeOnly: termTimeOnlyEl.checked
+    }));
+  } catch (e) {
+    // private browsing / storage disabled / quota exceeded -- just don't persist
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.childminders) && data.childminders.length >= MIN_CM && data.childminders.length <= MAX_CM) {
+      childminders = data.childminders;
+    }
+    if (Array.isArray(data.schedule) && data.schedule.length === 5) {
+      schedule = data.schedule;
+    }
+    if (Array.isArray(data.termRanges)) {
+      termRanges = data.termRanges.filter(r => r && typeof r.start === 'string' && typeof r.end === 'string');
+    }
+    if (typeof data.freeHours === 'string' || typeof data.freeHours === 'number') {
+      document.getElementById('freeHours').value = data.freeHours;
+    }
+    if (typeof data.excludeHolidays === 'boolean') {
+      document.getElementById('excludeHolidays').checked = data.excludeHolidays;
+    }
+    if (typeof data.allocStrategy === 'string') {
+      allocStrategyEl.value = data.allocStrategy;
+    }
+    if (typeof data.termTimeOnly === 'boolean') {
+      termTimeOnlyEl.checked = data.termTimeOnly;
+    }
+  } catch (e) {
+    // corrupt or inaccessible storage -- fall back to the defaults already set
+  }
+}
+
 function refreshAll() {
   renderChildminders();
   renderSchedule();
@@ -649,10 +701,13 @@ function calculate() {
     cell.innerHTML = inner;
     calGrid.appendChild(cell);
   });
+
+  saveState();
 }
 
-// set default month to the current month, then build everything
+// default to the current month, then load any saved setup and build everything
 const today = new Date();
 document.getElementById('monthPicker').value = `${today.getFullYear()}-${pad(today.getMonth() + 1)}`;
 
+loadState();
 refreshAll();
