@@ -108,6 +108,13 @@ input:focus, select:focus {
 .add-cm:hover:not(:disabled) { background: var(--accent-light); border-color: var(--accent); }
 .add-cm:disabled { color: var(--muted); cursor: default; }
 
+.term-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 10px; border-radius: 8px; background: #fafafa; margin-bottom: 6px;
+  font-size: 0.82rem;
+}
+.term-row:last-child { margin-bottom: 0; }
+
 .manual-item { margin-bottom: 14px; }
 .manual-item:last-child { margin-bottom: 0; }
 .manual-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
@@ -216,6 +223,7 @@ td.cm-col { width: 50%; }
 .legend-swatch.cm { background: var(--cm-color, var(--muted)); }
 .legend-swatch.holiday { background: #cbd5e1; }
 .legend-swatch.free { background: var(--good); }
+.legend-swatch.term { background: #b45309; }
 
 .cal-grid {
   display: grid;

@@ -29,6 +29,9 @@ is sent anywhere; there is no backend.
 - **Bank holidays** (England & Wales) auto-excluded — no childcare, no charge.
   A toggle (on by default) lets you turn this off so bank holidays are treated as
   normal booked days.
+- **Term-time-only free hours** (optional): if your funded hours only apply in school
+  term time, add your own term date ranges and days outside them are still booked &
+  charged in full, just without any free hours applied.
 - **Calendar view** of the month: per-day childminder, hours, cost, and a marker
   when free hours were applied. Tap any scheduled day to exclude it (sick day, day off)
   and tap again to include it.
@@ -42,10 +45,11 @@ is sent anywhere; there is no backend.
 Open `index.html` in a browser. Then:
 
 1. Pick the **month** and your **free hours per week**.
-2. Choose how free hours should be **split** each week.
-3. Add the **childminders** you use and set each one's **name** and **rate**.
-4. Fill in the **weekly schedule**.
-5. Read the **calendar**, **weekly breakdown**, and **monthly breakdown**. Tap
+2. If your funded hours are term-time only, turn that on and add your **term dates**.
+3. Choose how free hours should be **split** each week.
+4. Add the **childminders** you use and set each one's **name** and **rate**.
+5. Fill in the **weekly schedule**.
+6. Read the **calendar**, **weekly breakdown**, and **monthly breakdown**. Tap
    calendar days to exclude one-offs.
 
 All figures update live as you type.
@@ -61,14 +65,20 @@ All figures update live as you type.
   across their booked days that week (capped at each day's booked hours), so the
   calendar can show a day-by-day cost rather than front-loading free hours onto the
   earliest days.
+- If term-time-only is on, any scheduled day outside your term date ranges is
+  excluded from that week's free-hours pool entirely (still booked, still charged
+  in full) rather than just having its free hours reduced.
 - Cost per childminder = paid hours × their rate. Grand total = sum across all
   childminders.
 
-### Known limitation
+### How partial weeks at the start/end of the month are handled
 
-Weeks that straddle the start or end of the month are counted using only the days
-that fall inside the selected month. If you also use free hours elsewhere in such a
-week (i.e. in the adjacent month), you may need to adjust manually.
+A free-hours entitlement is a weekly amount, so a week that straddles the start or
+end of the selected month is still split as if it were a full Mon–Fri standard week
+— using your normal schedule for the day(s) that fall in the adjacent month (still
+respecting bank holidays, tapped exclusions, and term dates on those days). Only the
+days that actually fall inside the selected month are shown and charged; the
+adjacent month's own calendar computes its own days independently.
 
 ## Maintaining the bank holiday list
 

@@ -33,6 +33,31 @@
     </div>
 
     <div class="field">
+      <label class="toggle-line" for="termTimeOnly">
+        <input type="checkbox" id="termTimeOnly">
+        <span>Free hours only apply during term time</span>
+      </label>
+      <div class="hint">When on, days outside the term dates below are still booked &amp; charged in full, just without any free hours applied.</div>
+    </div>
+
+    <div class="field" id="termRangesWrap" style="display:none;">
+      <label>Term dates</label>
+      <div id="termRangesList"></div>
+      <div class="two-col" style="margin-top:8px;">
+        <div class="field">
+          <label for="termStartInput">Start</label>
+          <input type="date" id="termStartInput">
+        </div>
+        <div class="field">
+          <label for="termEndInput">End</label>
+          <input type="date" id="termEndInput">
+        </div>
+      </div>
+      <button type="button" id="addTermRange" class="add-cm">+ Add term dates</button>
+      <div class="hint">Add each term as a start/end date range. Free hours only apply on scheduled days that fall inside one of these ranges.</div>
+    </div>
+
+    <div class="field">
       <label for="allocStrategy">How to split free hours each week</label>
       <select id="allocStrategy">
         <option value="expensive-first" selected>Prioritise the more expensive childminder</option>

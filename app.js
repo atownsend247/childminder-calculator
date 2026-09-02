@@ -29,6 +29,10 @@ let schedule = [
 
 const excludedDates = new Set(); // ISO date strings the user has tapped to exclude on the calendar
 
+// term dates: { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' }[]; days outside all ranges
+// are still booked & charged in full, just not eligible for free hours
+let termRanges = [];
+
 // ---- element refs ----
 const cmListEl = document.getElementById('cmList');
 const addCmEl = document.getElementById('addCm');
@@ -37,6 +41,12 @@ const legendEl = document.getElementById('legend');
 const manualWrapEl = document.getElementById('manualPctWrap');
 const manualRowsEl = document.getElementById('manualPctRows');
 const allocStrategyEl = document.getElementById('allocStrategy');
+const termTimeOnlyEl = document.getElementById('termTimeOnly');
+const termRangesWrapEl = document.getElementById('termRangesWrap');
+const termRangesListEl = document.getElementById('termRangesList');
+const termStartInputEl = document.getElementById('termStartInput');
+const termEndInputEl = document.getElementById('termEndInput');
+const addTermRangeEl = document.getElementById('addTermRange');
 
 // ---- helpers ----
 function pad(n) { return n.toString().padStart(2, '0'); }
@@ -44,6 +54,10 @@ function isoDate(y, m, d) { return `${y}-${pad(m + 1)}-${pad(d)}`; }
 function fmtHours(n) { return n.toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' hrs'; }
 function fmtMoney(n) { return '£' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function cmClass(i) { return 'cm-c' + (i % PALETTE_SIZE); }
+function fmtDateLabel(iso) {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+function isInTerm(iso) { return termRanges.some(r => iso >= r.start && iso <= r.end); }
 
 // spread `total` hours as evenly as possible across days with per-day caps in `capArr`,
 // rounded to half-hour units, e.g. 21.5 over [8.5, 8.5, 8.5, 8.5] -> [5, 5.5, 5.5, 5.5]
@@ -163,6 +177,19 @@ function renderManualRows() {
   });
 }
 
+function renderTermRanges() {
+  if (termRanges.length === 0) {
+    termRangesListEl.innerHTML = `<div class="hint">No term dates added yet &mdash; free hours won't apply anywhere until you add at least one range.</div>`;
+    return;
+  }
+  termRangesListEl.innerHTML = termRanges.map((r, i) => `
+    <div class="term-row">
+      <span>${fmtDateLabel(r.start)} &ndash; ${fmtDateLabel(r.end)}</span>
+      <button type="button" class="cm-remove" data-idx="${i}">Remove</button>
+    </div>
+  `).join('');
+}
+
 function renderLegend() {
   legendEl.innerHTML = '';
   childminders.forEach((cm, i) => {
@@ -173,11 +200,16 @@ function renderLegend() {
   });
   legendEl.insertAdjacentHTML('beforeend',
     `<div class="legend-item"><span class="legend-swatch holiday"></span>Bank holiday</div>` +
-    `<div class="legend-item"><span class="legend-swatch free"></span>Free hours used</div>`);
+    `<div class="legend-item"><span class="legend-swatch free"></span>Free hours used</div>` +
+    `<div class="legend-item"><span class="legend-swatch term"></span>Out of term (full price)</div>`);
 }
 
 function updateManualUI() {
   manualWrapEl.style.display = (allocStrategyEl.value === 'manual') ? 'block' : 'none';
+}
+
+function updateTermUI() {
+  termRangesWrapEl.style.display = termTimeOnlyEl.checked ? 'block' : 'none';
 }
 
 function refreshAll() {
@@ -185,7 +217,9 @@ function refreshAll() {
   renderSchedule();
   renderManualRows();
   renderLegend();
+  renderTermRanges();
   updateManualUI();
+  updateTermUI();
   calculate();
 }
 
@@ -259,6 +293,27 @@ manualRowsEl.addEventListener('input', e => {
 });
 allocStrategyEl.addEventListener('change', () => { updateManualUI(); calculate(); });
 
+termTimeOnlyEl.addEventListener('change', () => { updateTermUI(); calculate(); });
+
+addTermRangeEl.addEventListener('click', () => {
+  const start = termStartInputEl.value;
+  const end = termEndInputEl.value;
+  if (!start || !end || start > end) return;
+  termRanges.push({ start, end });
+  termRanges.sort((a, b) => a.start.localeCompare(b.start));
+  termStartInputEl.value = '';
+  termEndInputEl.value = '';
+  renderTermRanges();
+  calculate();
+});
+
+termRangesListEl.addEventListener('click', e => {
+  if (!e.target.classList.contains('cm-remove')) return;
+  termRanges.splice(+e.target.dataset.idx, 1);
+  renderTermRanges();
+  calculate();
+});
+
 // ---- the calculation ----
 
 function calculate() {
@@ -270,6 +325,9 @@ function calculate() {
   const excludeHolidays = document.getElementById('excludeHolidays').checked;
   const freeHoursPerWeek = parseFloat(document.getElementById('freeHours').value) || 0;
   const strategy = allocStrategyEl.value;
+  // only actually restrict once at least one term range exists, so switching the
+  // toggle on doesn't silently zero out every free hour before any dates are added
+  const termTimeOnly = termTimeOnlyEl.checked && termRanges.length > 0;
 
   const n = childminders.length;
   const rates = childminders.map(c => c.rate);
@@ -287,7 +345,7 @@ function calculate() {
     const isWeekend = (dow === 0 || dow === 6);
     const isHoliday = BANK_HOLIDAYS.has(iso);
 
-    const rec = { date: d, iso, dow, isWeekend, isHoliday, cm: -1, hours: 0, free: 0, paid: 0, cost: 0, clickable: false, excluded: false };
+    const rec = { date: d, iso, dow, isWeekend, isHoliday, cm: -1, hours: 0, free: 0, paid: 0, cost: 0, clickable: false, excluded: false, termEligible: true };
 
     if (isWeekend) { dayRecords.push(rec); continue; }
     if (isHoliday) {
@@ -306,6 +364,7 @@ function calculate() {
     if (excludedDates.has(iso)) { rec.excluded = true; dayRecords.push(rec); continue; }
 
     rec.hours = entry.hours;
+    rec.termEligible = !termTimeOnly || isInTerm(iso);
 
     const monday = new Date(dateObj);
     monday.setDate(dateObj.getDate() - (dow - 1));
@@ -413,8 +472,20 @@ function calculate() {
       d.setDate(monday.getDate() + offset);
       if (d.getFullYear() === year && d.getMonth() === monthIndex) {
         const rec = w.days.find(r => r.date === d.getDate());
-        if (rec) fullDays.push({ cm: rec.cm, hours: rec.hours, rec });
+        if (rec && rec.termEligible) {
+          fullDays.push({ cm: rec.cm, hours: rec.hours, rec });
+        } else if (rec) {
+          // out of term: still fully booked & charged, just not part of the free-hours pool
+          rec.free = 0;
+          rec.paid = rec.hours;
+          rec.cost = rec.hours * rates[rec.cm];
+          paid[rec.cm] += rec.paid;
+        }
       } else {
+        // term dates are deliberately NOT checked here: a term range the user entered
+        // for this month may simply not yet extend into the adjacent month, and that
+        // shouldn't be read as "this day is a school holiday" -- only bank holidays and
+        // tapped exclusions are reliable enough to apply to a day outside the month
         const entry = schedule[offset];
         const dIso = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
         const skip = (excludeHolidays && BANK_HOLIDAYS.has(dIso)) || excludedDates.has(dIso);
@@ -561,6 +632,7 @@ function calculate() {
       if (rec.free > 0) inner += `<div class="cal-free">${rec.free.toLocaleString(undefined, { maximumFractionDigits: 1 })}h free</div>`;
       inner += `<div class="cal-cost">${fmtMoney(rec.cost)}</div>`;
       if (rec.isHoliday) inner += `<div class="cal-holiday-label">Holiday</div>`;
+      if (!rec.termEligible) inner += `<div class="cal-holiday-label">Out of term</div>`;
     }
 
     if (rec.clickable) {
