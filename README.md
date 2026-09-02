@@ -57,8 +57,10 @@ All figures update live as you type.
 - Days are grouped into weeks keyed by their Monday. Free hours for a week are
   `min(free hours per week, hours actually booked that week)`, then split across the
   childminders using the chosen strategy.
-- The weekly free allocation is spread across that week's days in date order so the
-  calendar can show a day-by-day cost.
+- Each childminder's weekly free allocation is then spread as evenly as possible
+  across their booked days that week (capped at each day's booked hours), so the
+  calendar can show a day-by-day cost rather than front-loading free hours onto the
+  earliest days.
 - Cost per childminder = paid hours × their rate. Grand total = sum across all
   childminders.
 

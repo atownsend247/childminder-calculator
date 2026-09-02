@@ -44,6 +44,50 @@ function isoDate(y, m, d) { return `${y}-${pad(m + 1)}-${pad(d)}`; }
 function fmtHours(n) { return n.toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' hrs'; }
 function fmtMoney(n) { return '£' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function cmClass(i) { return 'cm-c' + (i % PALETTE_SIZE); }
+
+// spread `total` hours as evenly as possible across days with per-day caps in `capArr`,
+// rounded to half-hour units, e.g. 21.5 over [8.5, 8.5, 8.5, 8.5] -> [5, 5.5, 5.5, 5.5]
+function spreadEven(total, capArr) {
+  const count = capArr.length;
+  const share = new Array(count).fill(0);
+  if (count === 0 || total <= 0) return share;
+  const unit = 0.5;
+  let remaining = total;
+  const open = new Set(capArr.map((_, i) => i));
+  let guard = 0;
+  while (remaining > 1e-9 && open.size && guard++ < 50) {
+    const per = remaining / open.size;
+    let used = 0;
+    for (const i of [...open]) {
+      const room = capArr[i] - share[i];
+      const take = Math.min(per, room);
+      share[i] += take;
+      used += take;
+      if (capArr[i] - share[i] <= 1e-9) open.delete(i);
+    }
+    remaining -= used;
+    if (used <= 1e-9) break;
+  }
+  let roundedSum = 0;
+  for (let i = 0; i < count; i++) {
+    share[i] = Math.floor(share[i] / unit + 1e-9) * unit;
+    roundedSum += share[i];
+  }
+  // hand out the leftover half-hour units one at a time, round-robin from the last
+  // day backwards, so no single day soaks up the whole remainder
+  let leftoverUnits = Math.round((total - roundedSum) / unit);
+  let i = count - 1;
+  let attempts = 0;
+  while (leftoverUnits > 0 && attempts < count * 1000) {
+    if (share[i] + unit <= capArr[i] + 1e-9) {
+      share[i] += unit;
+      leftoverUnits--;
+    }
+    i = (i - 1 + count) % count;
+    attempts++;
+  }
+  return share;
+}
 function defaultName(i) { return 'Childminder ' + String.fromCharCode(65 + i); }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -101,14 +145,21 @@ function renderSchedule() {
 function renderManualRows() {
   manualRowsEl.innerHTML = '';
   childminders.forEach((cm, i) => {
-    const row = document.createElement('div');
-    row.className = 'manual-row';
-    row.innerHTML = `
-      <span class="manual-name">${escapeHtml(cm.name)}</span>
-      <input type="range" class="cmPct" data-idx="${i}" min="0" max="100" step="5" value="${cm.pct}">
-      <span class="manual-val" data-idx="${i}">${cm.pct}</span>
+    const item = document.createElement('div');
+    item.className = 'manual-item';
+    item.innerHTML = `
+      <div class="manual-row">
+        <span class="manual-name">${escapeHtml(cm.name)}</span>
+        <input type="range" class="cmPct" data-idx="${i}" min="0" max="100" step="5" value="${cm.pct}">
+        <span class="manual-val" data-idx="${i}">${cm.pct}</span>
+      </div>
+      <div class="manual-hours-row">
+        <span class="manual-hours-label">Split on a standard week</span>
+        <input type="text" class="manual-hours" data-idx="${i}" readonly value="0 hrs">
+      </div>
+      <div class="manual-days" data-idx="${i}"></div>
     `;
-    manualRowsEl.appendChild(row);
+    manualRowsEl.appendChild(item);
   });
 }
 
@@ -314,29 +365,87 @@ function calculate() {
     return alloc;
   }
 
+  // ---- standard-week split preview (the weekly pattern as configured, independent
+  // of holidays/exclusions/partial weeks in the actual selected month) ----
+  const standardWeekHours = new Array(n).fill(0);
+  schedule.forEach(entry => {
+    if (entry.cm != null && entry.cm >= 0 && entry.cm < n && entry.hours > 0) {
+      standardWeekHours[entry.cm] += entry.hours;
+    }
+  });
+  const standardWeekTotal = standardWeekHours.reduce((a, b) => a + b, 0);
+  const standardFreeForWeek = Math.min(freeHoursPerWeek, standardWeekTotal);
+  const standardAlloc = splitFree(standardWeekHours, standardFreeForWeek);
+  childminders.forEach((cm, i) => {
+    const box = manualRowsEl.querySelector(`.manual-hours[data-idx="${i}"]`);
+    if (box) box.value = fmtHours(standardAlloc[i]);
+
+    const daysEl = manualRowsEl.querySelector(`.manual-days[data-idx="${i}"]`);
+    if (daysEl) {
+      const dayEntries = [];
+      schedule.forEach((entry, di) => {
+        if (entry.cm === i && entry.hours > 0) dayEntries.push({ di, hours: entry.hours });
+      });
+      const share = spreadEven(standardAlloc[i], dayEntries.map(e => e.hours));
+      daysEl.innerHTML = dayEntries.map((e, idx) => `
+        <span class="manual-day"><span class="manual-day-label">${DAY_NAMES[e.di].slice(0, 3)}</span><span class="manual-day-val">${fmtHours(share[idx])}</span></span>
+      `).join('');
+    }
+  });
+
   const total = new Array(n).fill(0);
   const free = new Array(n).fill(0);
   const paid = new Array(n).fill(0);
 
-  Object.values(weeks).forEach(w => {
-    const weekTotal = w.hours.reduce((a, b) => a + b, 0);
-    const freeForWeek = Math.min(freeHoursPerWeek, weekTotal);
-    const alloc = splitFree(w.hours, freeForWeek);
-    for (let i = 0; i < n; i++) {
-      total[i] += w.hours[i];
-      free[i] += alloc[i];
-      paid[i] += w.hours[i] - alloc[i];
+  Object.entries(weeks).forEach(([weekKey, w]) => {
+    for (let i = 0; i < n; i++) total[i] += w.hours[i];
+
+    // A childminder's free-hours entitlement is a weekly amount, so a week that
+    // straddles the start/end of the selected month should still be split as a full
+    // standard week -- build the whole Mon-Fri day list for this calendar week,
+    // filling in days that fall in the adjacent month with a normal scheduled day
+    // (still respecting bank holidays/tapped exclusions on those dates), then only
+    // the real in-month days get shown/charged.
+    const monday = new Date(weekKey + 'T00:00:00');
+    const fullDays = []; // { cm, hours, rec: real day record, or null if outside the month }
+    for (let offset = 0; offset < 5; offset++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + offset);
+      if (d.getFullYear() === year && d.getMonth() === monthIndex) {
+        const rec = w.days.find(r => r.date === d.getDate());
+        if (rec) fullDays.push({ cm: rec.cm, hours: rec.hours, rec });
+      } else {
+        const entry = schedule[offset];
+        const dIso = isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+        const skip = (excludeHolidays && BANK_HOLIDAYS.has(dIso)) || excludedDates.has(dIso);
+        if (entry && entry.cm >= 0 && entry.cm < n && entry.hours > 0 && !skip) {
+          fullDays.push({ cm: entry.cm, hours: entry.hours, rec: null });
+        }
+      }
     }
 
-    // spread this week's free allocation across its days, chronologically, per childminder,
-    // so the calendar can show a day-by-day breakdown
-    const balance = alloc.slice();
-    w.days.slice().sort((a, b) => a.date - b.date).forEach(rec => {
-      const take = Math.min(balance[rec.cm], rec.hours);
-      rec.free = take;
-      rec.paid = rec.hours - take;
-      rec.cost = rec.paid * rates[rec.cm];
-      balance[rec.cm] -= take;
+    const weekHours = new Array(n).fill(0);
+    fullDays.forEach(fd => { weekHours[fd.cm] += fd.hours; });
+    const weekTotal = weekHours.reduce((a, b) => a + b, 0);
+    const freeForWeek = Math.min(freeHoursPerWeek, weekTotal);
+    const alloc = splitFree(weekHours, freeForWeek);
+
+    // spread each childminder's weekly free allocation evenly across all of that
+    // week's days (real + adjacent-month), then keep only the real in-month shares
+    const daysByCm = {};
+    fullDays.forEach(fd => { (daysByCm[fd.cm] = daysByCm[fd.cm] || []).push(fd); });
+    Object.keys(daysByCm).forEach(cmIdxStr => {
+      const cmIdx = +cmIdxStr;
+      const group = daysByCm[cmIdx];
+      const share = spreadEven(alloc[cmIdx], group.map(fd => fd.hours));
+      group.forEach((fd, idx) => {
+        if (!fd.rec) return;
+        fd.rec.free = share[idx];
+        fd.rec.paid = fd.rec.hours - share[idx];
+        fd.rec.cost = fd.rec.paid * rates[cmIdx];
+        free[cmIdx] += share[idx];
+        paid[cmIdx] += fd.rec.paid;
+      });
     });
   });
 
@@ -449,9 +558,9 @@ function calculate() {
     } else {
       cls += ' cm ' + cmClass(rec.cm);
       inner += `<div class="cal-hours">${rec.hours.toLocaleString(undefined, { maximumFractionDigits: 1 })}h</div>`;
+      if (rec.free > 0) inner += `<div class="cal-free">${rec.free.toLocaleString(undefined, { maximumFractionDigits: 1 })}h free</div>`;
       inner += `<div class="cal-cost">${fmtMoney(rec.cost)}</div>`;
       if (rec.isHoliday) inner += `<div class="cal-holiday-label">Holiday</div>`;
-      if (rec.free > 0) inner += `<div class="cal-free-dot" title="${rec.free.toFixed(1)}h free"></div>`;
     }
 
     if (rec.clickable) {
