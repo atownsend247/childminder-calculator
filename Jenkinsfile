@@ -49,47 +49,31 @@ pipeline {
             }
         }
 
-        stage('Test') {
-            steps {
-                sh '''
-                    uv sync
-                    uv run pytest
-                '''
-            }
-        }
-
-        // Dry run on every branch: reads Ghost and prints what would change,
-        // so a typo or unresolved link shows up before the merge.
-        stage('Check blog') {
-            when {
-                not { branch 'main' }
-            }
-            steps {
-                withCredentials([
-                    string(credentialsId: 'ghost-url', variable: 'GHOST_URL'),
-                    string(credentialsId: 'ghost-admin-key', variable: 'GHOST_ADMIN_KEY'),
-                ]) {
-                    sh 'uv run blog-sync'
-                }
-            }
-        }
-
+        // Syncs blog/*.md to Ghost after the deploy, so a blog problem can
+        // never hold up shipping the app (catchError marks the build
+        // UNSTABLE instead of failing it). Sync must precede --schedule:
+        // scheduling skips posts that aren't on Ghost yet. See
+        // https://github.com/atownsend247/ghost-blog-sync (docs/jenkins.md).
+        // Needs the global Secret text credentials `ghost-url` and
+        // `ghost-admin-key`; uvx comes from the Install uv stage above.
         stage('Sync blog') {
             when {
                 branch 'main'
             }
             steps {
-                withCredentials([
-                    string(credentialsId: 'ghost-url', variable: 'GHOST_URL'),
-                    string(credentialsId: 'ghost-admin-key', variable: 'GHOST_ADMIN_KEY'),
-                ]) {
-                    // set -e (Jenkins' default) stops before --schedule if
-                    // the content sync fails; the sync must come first
-                    // since --schedule skips posts not yet on Ghost.
-                    sh '''
-                        uv run blog-sync --apply
-                        uv run blog-sync --schedule --apply
-                    '''
+                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                    withCredentials([
+                        string(credentialsId: 'ghost-url', variable: 'GHOST_URL'),
+                        string(credentialsId: 'ghost-admin-key', variable: 'GHOST_ADMIN_KEY'),
+                    ]) {
+                        sh '''
+                            run_blog() {
+                                uvx --from git+https://github.com/atownsend247/ghost-blog-sync.git@v0.2.0 blog-sync "$@"
+                            }
+                            run_blog --apply
+                            run_blog --schedule --apply
+                        '''
+                    }
                 }
             }
         }
