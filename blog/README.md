@@ -9,6 +9,7 @@ hours and bank holidays. Each post covers one real step in building it, in order
 3. [Splitting free hours across childminders](03-splitting-free-hours.md)
 4. [Spreading hours across the week, and the partial-week problem](04-weeks-and-partial-weeks.md)
 5. [Term dates, persistence, and small decisions](05-term-dates-and-persistence.md)
+6. [Doing the top-up maths for sleep-deprived parents](06-the-government-top-up.md)
 
 The posts cover the work from 29 August to 2 September 2026. Each post ends with a hidden
 HTML comment listing the commits it covers, so the series can be checked against

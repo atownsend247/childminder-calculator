@@ -631,6 +631,10 @@ function calculate() {
   `).join('');
 
   document.getElementById('grandTotal').textContent = fmtMoney(grand);
+  // Government adds 20% of the deposit, so deposit = total / 1.2
+  const deposit = grand / 1.2;
+  document.getElementById('topupDeposit').textContent = fmtMoney(deposit);
+  document.getElementById('topupGov').textContent = fmtMoney(grand - deposit);
 
   // ---- bank holiday note ----
   const holidayNote = document.getElementById('holidayNote');

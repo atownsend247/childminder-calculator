@@ -140,4 +140,4 @@ edge of a month, and who gets the free hours.
 
 <!-- commits: 77d78b9 fcd5c45 989f169 -->
 
-Previous: [← Spreading hours across the week](04-weeks-and-partial-weeks.md)
+Previous: [← Spreading hours across the week](04-weeks-and-partial-weeks.md) · Next: [Doing the top-up maths →](06-the-government-top-up.md)
